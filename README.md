@@ -1,3 +1,5 @@
+# botox
+
 Set of common primitives for all services. Basically [eureka](https://github.com/InfinityBotList/eureka) but for rust
 
 - help: Help command implementation for serenity+poise
