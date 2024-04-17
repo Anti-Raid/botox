@@ -108,7 +108,7 @@ async fn _embed_help<Data: Send + Sync + 'static>(
 
                     let _ = writeln!(
                         menu,
-                        "/{cmd_name} {subcmd_name} | {prefix}!{cmd_name} {subcmd_name} - {desc}",
+                        "/{cmd_name} {subcmd_name} | {prefix}{cmd_name} {subcmd_name} - {desc}",
                         cmd_name = command.name,
                         subcmd_name = subcmd.name,
                         prefix = prefix,
