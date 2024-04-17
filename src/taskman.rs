@@ -1,11 +1,9 @@
 use log::{error, info};
-use once_cell::sync::Lazy;
 use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
 use futures::future::BoxFuture;
-
-static TASK_MUTEX: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0));
+use std::sync::Arc;
 
 pub type RunFunction = Box<
 dyn Send
@@ -28,6 +26,8 @@ pub async fn start_all_tasks(
     tasks: Vec<Task>,
     ctx: serenity::client::Context,
 ) -> ! {
+    let task_mutex = Arc::new(Mutex::new(()));
+
     // Start tasks
     let mut set = JoinSet::new();
 
@@ -41,6 +41,7 @@ pub async fn start_all_tasks(
         set.spawn(taskcat(
             ctx.clone(),
             task,
+            task_mutex.clone(),
         ));
     }
 
@@ -61,6 +62,7 @@ pub async fn start_all_tasks(
 async fn taskcat(
     ctx: serenity::client::Context,
     task: Task,
+    task_mutex: Arc<Mutex<()>>,
 ) -> ! {
     // Ensure multiple tx's are not created at the same time
     tokio::time::sleep(task.duration).await;
@@ -70,7 +72,7 @@ async fn taskcat(
     loop {
         interval.tick().await;
 
-        let guard = TASK_MUTEX.lock().await;
+        let guard = task_mutex.lock().await;
 
         log::info!(
             "TASK: {} ({}s interval) [{}]",

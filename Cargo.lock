@@ -135,7 +135,6 @@ dependencies = [
  "futures-util",
  "indexmap",
  "log",
- "once_cell",
  "poise",
  "rand",
  "serenity",
