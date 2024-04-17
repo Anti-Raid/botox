@@ -10,6 +10,12 @@ use crate::Error;
 use std::sync::Arc;
 use std::time::Duration;
 
+#[derive(Default)]
+pub struct HelpOptions {
+    #[allow(clippy::type_complexity)]
+    pub get_category: Option<Box<dyn Fn(Option<String>) -> Option<String>>>,
+}
+
 /// Struct to store embed data for the help command
 struct EmbedHelp {
     category: String,
@@ -20,6 +26,7 @@ async fn _embed_help<Data: Send + Sync + 'static>(
     pctx: poise::Context<'_, Data, crate::Error>,
     ctx: poise::FrameworkContext<'_, Data, crate::Error>,
     prefix: &str,
+    ho: HelpOptions,
 ) -> Result<Vec<EmbedHelp>, Error> {
     let mut categories = indexmap::IndexMap::<Option<String>, Vec<&Command<Data, Error>>>::new();
     for cmd in &ctx.options().commands {
@@ -35,8 +42,15 @@ async fn _embed_help<Data: Send + Sync + 'static>(
 
     let mut help_arr = Vec::new();
 
-    for (category_name, commands) in categories {
-        let cat_name = category_name.unwrap_or("Commands".to_string());
+    for (category, commands) in categories {
+        let cat_name = {
+            if let Some(get_category) = &ho.get_category {
+                get_category(category)
+            } else {
+                category
+            }
+        }.unwrap_or("Uncategorized".to_string());
+        
         let mut menu = "".to_string();
         for command in commands {
             if command.hide_in_help {
@@ -249,6 +263,7 @@ pub async fn help<Data: Send + Sync + 'static>(
     ctx: poise::Context<'_, Data, crate::Error>, 
     command: Option<String>,
     prefix: &str,
+    ho: HelpOptions,
 ) -> Result<(), Error> {
     if let Some(cmd) = command {
         // They just want the parameters for a specific command
@@ -315,7 +330,7 @@ pub async fn help<Data: Send + Sync + 'static>(
         return Ok(());
     }
 
-    let eh = _embed_help(ctx, ctx.framework(), prefix).await?;
+    let eh = _embed_help(ctx, ctx.framework(), prefix, ho).await?;
 
     let msg = _help_send_index(Some(ctx), None, &ctx.serenity_context().http, &eh, 0, None).await?;
 
