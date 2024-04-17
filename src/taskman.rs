@@ -11,8 +11,7 @@ pub type RunFunction = Box<
 dyn Send
 + Sync
 + for<'a> Fn(
-    &'a super::cache::CacheHttpImpl,
-    &'a serenity::all::Context,
+    &'a serenity::client::Context,
 ) -> BoxFuture<'a, Result<(), crate::Error>>,
 >;
 
@@ -27,7 +26,6 @@ pub struct Task {
 /// Starts all tasks from a list of Tasks
 pub async fn start_all_tasks(
     tasks: Vec<Task>,
-    cache_http: super::cache::CacheHttpImpl,
     ctx: serenity::client::Context,
 ) -> ! {
     // Start tasks
@@ -41,7 +39,6 @@ pub async fn start_all_tasks(
         info!("Starting task: {}", task.name);
 
         set.spawn(taskcat(
-            cache_http.clone(),
             ctx.clone(),
             task,
         ));
@@ -62,7 +59,6 @@ pub async fn start_all_tasks(
 
 /// Function that manages a task
 async fn taskcat(
-    cache_http: super::cache::CacheHttpImpl,
     ctx: serenity::client::Context,
     task: Task,
 ) -> ! {
@@ -83,7 +79,7 @@ async fn taskcat(
             task.description
         );
 
-        if let Err(e) = (task.run)(&cache_http, &ctx).await {
+        if let Err(e) = (task.run)(&ctx).await {
             log::error!("TASK {} ERROR'd: {:?}", task.name, e);
         }
 
