@@ -13,7 +13,7 @@ use std::time::Duration;
 #[derive(Default)]
 pub struct HelpOptions {
     #[allow(clippy::type_complexity)]
-    pub get_category: Option<Box<dyn Fn(Option<String>) -> Option<String>>>,
+    pub get_category: Option<Box<dyn Fn(Option<String>) -> Option<String> + Send + Sync + 'static>>,
 }
 
 /// Struct to store embed data for the help command
