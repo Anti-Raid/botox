@@ -1,0 +1,18 @@
+[package]
+name = "botox"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+poise = { git = "https://github.com/serenity-rs/poise", branch = "serenity-next" }
+futures-util = "0.3"
+indexmap = { version = "2.1", features = ["serde"] }
+rand = "0.8"
+
+[dependencies.serenity]
+git = "https://github.com/serenity-rs/serenity"
+branch = "next"
+features = ["model", "http", "cache", "rustls_backend"]
+
+[features]
+default = []
