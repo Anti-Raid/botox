@@ -16,8 +16,8 @@ dyn Send
 >;
 
 pub struct Task {
-    pub name: String,
-    pub description: String,
+    pub name: &'static str,
+    pub description: &'static str,
     pub enabled: bool,
     pub duration: Duration,
     pub run: RunFunction
