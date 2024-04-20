@@ -12,7 +12,9 @@ pub async fn member_on_guild(
 ) -> Result<Option<serenity::all::Member>, crate::Error> {
     if let Some(cache) = cache_http.cache() {
         if let Some(guild) = cache.guild(guild_id) {
-            return Ok(guild.members.get(&user_id).cloned());
+            if let Some(member) = guild.members.get(&user_id).cloned() {
+                return Ok(Some(member));
+            }
         }
     }
 
