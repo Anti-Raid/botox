@@ -31,6 +31,7 @@ pub struct HelpOptions<Data: Send + Sync + 'static, State: Send + Sync + Default
                 ) -> BoxFuture<'a, Result<bool, crate::Error>>,
         >,
     >,
+    /// State for the help command
     pub state: State,
 }
 
