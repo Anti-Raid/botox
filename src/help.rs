@@ -1,3 +1,4 @@
+use futures::future::BoxFuture;
 use futures_util::StreamExt;
 use poise::serenity_prelude::{
     self as serenity, ChannelId, ComponentInteraction, ComponentInteractionDataKind,
@@ -11,9 +12,25 @@ use std::sync::Arc;
 use std::time::Duration;
 
 #[derive(Default)]
-pub struct HelpOptions {
+pub struct HelpOptions<Data: Send + Sync + 'static> {
+    /// Returns the category of a command
+    ///
+    /// Note that the category of A must be constant
     #[allow(clippy::type_complexity)]
     pub get_category: Option<Box<dyn Fn(Option<String>) -> Option<String> + Send + Sync + 'static>>,
+    /// Filters a command
+    #[allow(clippy::type_complexity)]
+    pub filter: Option<
+        Box<
+            dyn Send
+                + Sync
+                + for<'a, 'b> Fn(
+                    &'a poise::Context<'_, Data, crate::Error>,
+                    &'b str,
+                    &'b str,
+                ) -> BoxFuture<'a, Result<bool, crate::Error>>,
+        >,
+    >,
 }
 
 /// Struct to store embed data for the help command
@@ -26,7 +43,7 @@ async fn _embed_help<Data: Send + Sync + 'static>(
     pctx: poise::Context<'_, Data, crate::Error>,
     ctx: poise::FrameworkContext<'_, Data, crate::Error>,
     prefix: &str,
-    ho: HelpOptions,
+    ho: HelpOptions<Data>,
 ) -> Result<Vec<EmbedHelp>, Error> {
     let mut categories = indexmap::IndexMap::<Option<String>, Vec<&Command<Data, Error>>>::new();
     for cmd in &ctx.options().commands {
@@ -49,12 +66,26 @@ async fn _embed_help<Data: Send + Sync + 'static>(
             } else {
                 category
             }
-        }.unwrap_or("Uncategorized".to_string());
-        
+        }
+        .unwrap_or("Uncategorized".to_string());
+
         let mut menu = "".to_string();
         for command in commands {
             if command.hide_in_help {
                 continue;
+            }
+
+            if let Some(filter) = &ho.filter {
+                let res = filter(
+                    &pctx,
+                    command.name.as_str(),
+                    command.qualified_name.as_str(),
+                )
+                .await?;
+
+                if !res {
+                    continue;
+                }
             }
 
             let mut flag = true;
@@ -260,10 +291,10 @@ async fn _help_send_index<Data: Send + Sync + 'static>(
 
 /// Simple help command that can be plugged into your bot
 pub async fn help<Data: Send + Sync + 'static>(
-    ctx: poise::Context<'_, Data, crate::Error>, 
+    ctx: poise::Context<'_, Data, crate::Error>,
     command: Option<String>,
     prefix: &str,
-    ho: HelpOptions,
+    ho: HelpOptions<Data>,
 ) -> Result<(), Error> {
     if let Some(cmd) = command {
         // They just want the parameters for a specific command
