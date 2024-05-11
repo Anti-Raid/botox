@@ -12,7 +12,9 @@ use std::sync::Arc;
 use std::time::Duration;
 
 #[derive(Default)]
-pub struct HelpOptions<Data: Send + Sync + 'static, State: Send + Sync + Default> {
+pub struct HelpOptions<Data: Send + Sync + 'static, State: Send + Sync + Default + 'static> {
+    /// State for the help command
+    pub state: State,
     /// Returns the category of a command
     ///
     /// Note that the category of A must be constant
@@ -31,8 +33,6 @@ pub struct HelpOptions<Data: Send + Sync + 'static, State: Send + Sync + Default
                 ) -> BoxFuture<'a, Result<bool, crate::Error>>,
         >,
     >,
-    /// State for the help command
-    pub state: State,
 }
 
 /// Struct to store embed data for the help command
@@ -41,7 +41,7 @@ struct EmbedHelp {
     desc: String,
 }
 
-async fn _embed_help<Data: Send + Sync + 'static, State: Send + Sync + Default>(
+async fn _embed_help<Data: Send + Sync + 'static, State: Send + Sync + Default + 'static>(
     pctx: poise::Context<'_, Data, crate::Error>,
     ctx: poise::FrameworkContext<'_, Data, crate::Error>,
     prefix: &str,
@@ -287,7 +287,7 @@ async fn _help_send_index<Data: Send + Sync + 'static>(
 }
 
 /// Simple help command that can be plugged into your bot
-pub async fn help<Data: Send + Sync + 'static, State: Send + Sync + Default>(
+pub async fn help<Data: Send + Sync + 'static, State: Send + Sync + Default + 'static>(
     ctx: poise::Context<'_, Data, crate::Error>,
     command: Option<String>,
     prefix: &str,
