@@ -26,10 +26,10 @@ pub struct HelpOptions<Data: Send + Sync + 'static, State: Send + Sync + Default
         Box<
             dyn Send
                 + Sync
-                + for<'a, 'b, 'c> Fn(
+                + for<'a> Fn(
                     &'a poise::Context<'_, Data, crate::Error>,
-                    &'b State,
-                    &'c poise::Command<Data, Error>,
+                    &'a State,
+                    &'a poise::Command<Data, Error>,
                 ) -> BoxFuture<'a, Result<bool, crate::Error>>,
         >,
     >,
