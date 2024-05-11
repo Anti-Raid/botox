@@ -77,14 +77,6 @@ async fn _embed_help<Data: Send + Sync + 'static, State: Send + Sync + Default>(
                 continue;
             }
 
-            if let Some(filter) = &ho.filter {
-                let res = filter(&pctx, &ho.state, command).await?;
-
-                if !res {
-                    continue;
-                }
-            }
-
             let mut flag = true;
 
             for check in command.checks.iter() {
@@ -133,6 +125,14 @@ async fn _embed_help<Data: Send + Sync + 'static, State: Send + Sync + Default>(
                     if subcmd.hide_in_help {
                         continue;
                     }
+
+                    if let Some(filter) = &ho.filter {
+                        let res = filter(&pctx, &ho.state, subcmd).await?;
+        
+                        if !res {
+                            continue;
+                        }
+                    }        
 
                     let _ = writeln!(
                         menu,
