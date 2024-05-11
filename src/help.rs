@@ -26,8 +26,7 @@ pub struct HelpOptions<Data: Send + Sync + 'static> {
                 + Sync
                 + for<'a, 'b> Fn(
                     &'a poise::Context<'_, Data, crate::Error>,
-                    &'b str,
-                    &'b str,
+                    &'b poise::Command<Data, Error>,
                 ) -> BoxFuture<'a, Result<bool, crate::Error>>,
         >,
     >,
@@ -76,12 +75,7 @@ async fn _embed_help<Data: Send + Sync + 'static>(
             }
 
             if let Some(filter) = &ho.filter {
-                let res = filter(
-                    &pctx,
-                    command.name.as_str(),
-                    command.qualified_name.as_str(),
-                )
-                .await?;
+                let res = filter(&pctx, command).await?;
 
                 if !res {
                     continue;
