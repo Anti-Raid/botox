@@ -12,7 +12,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 #[derive(Default)]
-pub struct HelpOptions<Data: Send + Sync + 'static> {
+pub struct HelpOptions<Data: Send + Sync + 'static, State: Send + Sync + Default> {
     /// Returns the category of a command
     ///
     /// Note that the category of A must be constant
@@ -24,12 +24,14 @@ pub struct HelpOptions<Data: Send + Sync + 'static> {
         Box<
             dyn Send
                 + Sync
-                + for<'a, 'b> Fn(
+                + for<'a, 'b, 'c> Fn(
                     &'a poise::Context<'_, Data, crate::Error>,
-                    &'b poise::Command<Data, Error>,
+                    &'b State,
+                    &'c poise::Command<Data, Error>,
                 ) -> BoxFuture<'a, Result<bool, crate::Error>>,
         >,
     >,
+    pub state: State,
 }
 
 /// Struct to store embed data for the help command
@@ -38,11 +40,11 @@ struct EmbedHelp {
     desc: String,
 }
 
-async fn _embed_help<Data: Send + Sync + 'static>(
+async fn _embed_help<Data: Send + Sync + 'static, State: Send + Sync + Default>(
     pctx: poise::Context<'_, Data, crate::Error>,
     ctx: poise::FrameworkContext<'_, Data, crate::Error>,
     prefix: &str,
-    ho: HelpOptions<Data>,
+    ho: HelpOptions<Data, State>,
 ) -> Result<Vec<EmbedHelp>, Error> {
     let mut categories = indexmap::IndexMap::<Option<String>, Vec<&Command<Data, Error>>>::new();
     for cmd in &ctx.options().commands {
@@ -75,7 +77,7 @@ async fn _embed_help<Data: Send + Sync + 'static>(
             }
 
             if let Some(filter) = &ho.filter {
-                let res = filter(&pctx, command).await?;
+                let res = filter(&pctx, &ho.state, command).await?;
 
                 if !res {
                     continue;
@@ -284,11 +286,11 @@ async fn _help_send_index<Data: Send + Sync + 'static>(
 }
 
 /// Simple help command that can be plugged into your bot
-pub async fn help<Data: Send + Sync + 'static>(
+pub async fn help<Data: Send + Sync + 'static, State: Send + Sync + Default>(
     ctx: poise::Context<'_, Data, crate::Error>,
     command: Option<String>,
     prefix: &str,
-    ho: HelpOptions<Data>,
+    ho: HelpOptions<Data, State>,
 ) -> Result<(), Error> {
     if let Some(cmd) = command {
         // They just want the parameters for a specific command
