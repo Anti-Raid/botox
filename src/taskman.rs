@@ -1,16 +1,14 @@
+use futures::future::BoxFuture;
 use log::{error, info};
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
-use futures::future::BoxFuture;
-use std::sync::Arc;
 
 pub type RunFunction = Box<
-dyn Send
-+ Sync
-+ for<'a> Fn(
-    &'a serenity::client::Context,
-) -> BoxFuture<'a, Result<(), crate::Error>>,
+    dyn Send
+        + Sync
+        + for<'a> Fn(&'a serenity::all::client::Context) -> BoxFuture<'a, Result<(), crate::Error>>,
 >;
 
 pub struct Task {
@@ -18,14 +16,11 @@ pub struct Task {
     pub description: &'static str,
     pub enabled: bool,
     pub duration: Duration,
-    pub run: RunFunction
+    pub run: RunFunction,
 }
 
 /// Starts all tasks from a list of Tasks
-pub async fn start_all_tasks(
-    tasks: Vec<Task>,
-    ctx: serenity::client::Context,
-) -> ! {
+pub async fn start_all_tasks(tasks: Vec<Task>, ctx: serenity::all::client::Context) -> ! {
     let task_mutex = Arc::new(Mutex::new(()));
 
     // Start tasks
@@ -38,11 +33,7 @@ pub async fn start_all_tasks(
 
         info!("Starting task: {}", task.name);
 
-        set.spawn(taskcat(
-            ctx.clone(),
-            task,
-            task_mutex.clone(),
-        ));
+        set.spawn(taskcat(ctx.clone(), task, task_mutex.clone()));
     }
 
     if let Some(res) = set.join_next().await {
@@ -59,11 +50,7 @@ pub async fn start_all_tasks(
 }
 
 /// Function that manages a task
-async fn taskcat(
-    ctx: serenity::client::Context,
-    task: Task,
-    task_mutex: Arc<Mutex<()>>,
-) -> ! {
+async fn taskcat(ctx: serenity::all::client::Context, task: Task, task_mutex: Arc<Mutex<()>>) -> ! {
     // Ensure multiple tx's are not created at the same time
     tokio::time::sleep(task.duration).await;
 
