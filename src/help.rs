@@ -50,12 +50,14 @@ async fn _embed_help<Data: Send + Sync + 'static, State: Send + Sync + Default>(
     let mut categories = indexmap::IndexMap::<Option<String>, Vec<&Command<Data, Error>>>::new();
     for cmd in &ctx.options().commands {
         // Check if category exists
-        if categories.contains_key(&cmd.category) {
-            categories.get_mut(&cmd.category).unwrap().push(cmd);
+        let category = cmd.category.as_ref().map(|x| x.to_string());
+
+        if categories.contains_key(&category) {
+            categories.get_mut(&category).unwrap().push(cmd);
         }
         // If category doesn't exist, create it
         else {
-            categories.insert(cmd.category.clone(), vec![cmd]);
+            categories.insert(category, vec![cmd]);
         }
     }
 
@@ -128,11 +130,11 @@ async fn _embed_help<Data: Send + Sync + 'static, State: Send + Sync + Default>(
 
                     if let Some(filter) = &ho.filter {
                         let res = filter(&pctx, &ho.state, subcmd).await?;
-        
+
                         if !res {
                             continue;
                         }
-                    }        
+                    }
 
                     let _ = writeln!(
                         menu,
@@ -205,17 +207,20 @@ fn _create_reply<'a>(
                 .description(&data.desc),
         )
         .components(vec![
-            CreateActionRow::Buttons(vec![
-                CreateButton::new("hnav:".to_string() + &(index - 1).to_string())
-                    .label("Previous")
-                    .disabled(prev_disabled),
-                CreateButton::new("hnav:cancel")
-                    .label("Cancel")
-                    .style(serenity::ButtonStyle::Danger),
-                CreateButton::new("hnav:".to_string() + &(index + 1).to_string())
-                    .label("Next")
-                    .disabled(next_disabled),
-            ]),
+            CreateActionRow::Buttons(
+                vec![
+                    CreateButton::new("hnav:".to_string() + &(index - 1).to_string())
+                        .label("Previous")
+                        .disabled(prev_disabled),
+                    CreateButton::new("hnav:cancel")
+                        .label("Cancel")
+                        .style(serenity::ButtonStyle::Danger),
+                    CreateButton::new("hnav:".to_string() + &(index + 1).to_string())
+                        .label("Next")
+                        .disabled(next_disabled),
+                ]
+                .into(),
+            ),
             CreateActionRow::SelectMenu(_create_select_menu(l_data, index)),
         ])
 }
@@ -336,7 +341,7 @@ pub async fn help<Data: Send + Sync + 'static, State: Send + Sync + Default>(
                                 .iter()
                                 .map(|p| format!(
                                     "*{}* - {}",
-                                    p.name.as_str(),
+                                    p.name,
                                     p.description
                                         .as_deref()
                                         .unwrap_or("No description available yet")
@@ -365,6 +370,7 @@ pub async fn help<Data: Send + Sync + 'static, State: Send + Sync + Default>(
     if let Some(msg) = msg {
         // Create a collector
         let interaction = msg
+            .id
             .await_component_interactions(ctx.serenity_context().shard.clone())
             .author_id(ctx.author().id)
             .timeout(Duration::from_secs(120));
@@ -436,22 +442,5 @@ pub async fn help<Data: Send + Sync + 'static, State: Send + Sync + Default>(
         return Err("No help message found".into());
     }
 
-    Ok(())
-}
-
-/// An even more simple help command that can be plugged into your bot
-pub async fn simplehelp<Data: Send + Sync + 'static>(
-    ctx: poise::Context<'_, Data, crate::Error>,
-    command: Option<String>,
-) -> Result<(), Error> {
-    poise::builtins::help(
-        ctx,
-        command.as_deref(),
-        poise::builtins::HelpConfiguration {
-            show_context_menu_commands: true,
-            ..poise::builtins::HelpConfiguration::default()
-        },
-    )
-    .await?;
     Ok(())
 }

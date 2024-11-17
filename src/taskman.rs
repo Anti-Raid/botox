@@ -37,9 +37,7 @@ pub async fn start_all_tasks(tasks: Vec<Task>, ctx: serenity::all::client::Conte
     }
 
     if let Some(res) = set.join_next().await {
-        if let Err(e) = res {
-            error!("Error while running task: {}", e);
-        }
+        error!("Error while running task: {}", res.unwrap_err());
 
         info!("Task finished when it shouldn't have");
         std::process::abort();
